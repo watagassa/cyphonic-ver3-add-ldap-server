@@ -11,7 +11,7 @@ require (
 	github.com/miekg/dns v1.1.68
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.10.2
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.14.0
 	golang.org/x/sys v0.33.0
@@ -44,7 +44,7 @@ require (
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
