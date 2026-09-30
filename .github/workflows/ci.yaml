@@ -32,7 +32,7 @@ jobs:
           echo "SHA8=${GITHUB_SHA::8}" >> $GITHUB_ENV
 
       - name: AS image build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.docker/as/Dockerfile.production
@@ -40,7 +40,7 @@ jobs:
           tags: pluslab/cyphonic-asd:${{ env.SHA8 }}
 
       - name: NMS image build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.docker/nms/Dockerfile.production
@@ -48,7 +48,7 @@ jobs:
           tags: pluslab/cyphonic-nmsd:${{ env.SHA8 }}
 
       - name: TRS image build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.docker/trs/Dockerfile.production
@@ -56,7 +56,7 @@ jobs:
           tags: pluslab/cyphonic-trsd:${{ env.SHA8 }}
 
       - name: Controller API image build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.docker/controller/Dockerfile.production
@@ -64,7 +64,7 @@ jobs:
           tags: pluslab/cyphonic-controller-api:${{ env.SHA8 }}
 
       - name: Web Controller image build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.docker/web/Dockerfile.production
@@ -72,7 +72,7 @@ jobs:
           tags: pluslab/cyphonic-web:${{ env.SHA8 }}
 
       - name: U-NS image build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.docker/u-ns/Dockerfile.production
