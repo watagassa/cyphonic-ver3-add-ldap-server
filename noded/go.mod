@@ -1,6 +1,6 @@
 module github.com/Pluslab/cyphonic/noded
 
-go 1.23.4
+go 1.26.0
 
 require (
 	github.com/getkin/kin-openapi v0.131.0
@@ -14,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.14.0
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
