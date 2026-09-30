@@ -1,0 +1,41 @@
+{
+  "prettier.tabWidth": 2,
+  "emmet.triggerExpansionOnTab": true,
+  "editor.guides.indentation": true,
+  "npm.exclude": "",
+  "explorer.confirmDelete": false,
+  "vsicons.dontShowNewVersionMessage": true,
+  "editor.detectIndentation": false,
+  "files.trimTrailingWhitespace": true,
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "json.schemas": [],
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4
+  },
+  "go.useLanguageServer": true,
+  "go.toolsManagement.autoUpdate": true,
+  "[markdown]": {
+    "editor.defaultFormatter": "svipas.prettier-plus",
+    "editor.formatOnSave": true
+  },
+  "[shellscript]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "foxundermoon.shell-format",
+    "editor.formatOnSave": true
+  },
+  "shellcheck.enable": false,
+  "plantuml.exportOutDir": "."
+}

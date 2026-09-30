@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "device_id": "1f0b1fb5663eb66f0a5155606f91e37f6333263716df86f451a273c0",
+  "account_id": 5,
+  "device_name": "test-device",
+  "fqdn": "1f0b1fb5663eb66f0a5155606f91e37f6333263716df86f451a273c0.nms01.local.cyphonic.org",
+  "node_management_area_id": 1,
+  "device_type": 1,
+  "adapter_flag": false,
+  "general_node_flag": false,
+  "inter_node_certification_flag": false,
+  "status": 0
+}

@@ -1,0 +1,56 @@
+name: controller-reviewdog
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+      - "!dependabot/**"
+    paths:
+      - ".github/workflows/controller-reviewdog.yaml"
+      - "controller/api/**"
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
+      - "feature/**"
+      - "hotfix/**"
+      - "**"
+      - "!dependabot/**"
+    paths:
+      - ".github/workflows/controller-reviewdog.yaml"
+      - "controller/api/**"
+
+env:
+  GO111MODULE: on
+
+jobs:
+  reviewdog:
+    name: Set up
+    runs-on: ubuntu-latest
+    # https://github.blog/changelog/2021-02-19-github-actions-workflows-triggered-by-dependabot-prs-will-run-with-read-only-permissions/
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Get dependencies
+        run: |
+          cd controller/api
+          go install ./...
+      - name: Install golangci-lint, reviewdog
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+          go install github.com/reviewdog/reviewdog/cmd/reviewdog@v0.20.3
+      - name: Run reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd controller/api
+          golangci-lint run --config=.golangci.yaml --out-format=line-number ./... | reviewdog -reporter=github-pr-review -filter-mode=nofilter -fail-level=error

@@ -1,0 +1,79 @@
+name: Go
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+    paths:
+      - "**.go"
+      - "**.mod"
+      - "**.sum"
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
+      - "feature/**"
+      - "hotfix/**"
+      - "**"
+    paths:
+      - "**.go"
+      - "**.mod"
+      - "**.sum"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Test code
+        run: |
+          cd asd
+          go test -v ./...
+          cd ../u-trsd
+          go test -v ./...
+          cd ../noded
+          go test -v ./...
+          cd ../u-nsd
+          go test -v ./...
+          cd ../dsd
+          go test -v ./...
+          cd ../controller/api
+          go test -v ./...
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          cd asd
+          go build -v ./cmd/asd/main.go
+          cd ../u-trsd
+          go build -v ./cmd/u-trsd/main.go
+          cd ../noded
+          go build -v ./cmd/noded/main.go
+          cd ../u-nsd
+          go build -v ./cmd/u-nsd/main.go
+          cd ../dsd
+          go build -v ./cmd/dsd/main.go
+          cd ../controller/api
+          go build -v ./cmd/server

@@ -1,0 +1,26 @@
+<source>
+  @type tail
+  path /var/log/trs-debug.json
+  pos_file /var/log/trs-debug.json.pos
+  tag cyphonic.trs.debug
+  <parse>
+    @type json
+  </parse>
+</source>
+
+<source>
+  @type tail
+  path /var/log/trs-error.json
+  pos_file /var/log/trs-error.json.pos
+  tag cyphonic.trs.error
+  <parse>
+    @type json
+  </parse>
+</source>
+
+<match cyphonic.**>
+  @type elasticsearch
+  host elasticsearch
+  port 9200
+  logstash_format true
+</match>

@@ -1,0 +1,11 @@
+{{- with .Values.configMap.env }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}
+  namespace: {{ include "trs.name" $ }}
+  labels:
+  {{- toYaml $.Values.commonLabels | nindent 4 }}
+  {{- include "trs.selectorLabels" $ | nindent 4 }}
+data: {{ toYaml .data | nindent 2 }}
+{{- end }}

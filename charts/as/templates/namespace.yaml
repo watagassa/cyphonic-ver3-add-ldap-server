@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "as.name" $ }}
+  labels:
+  {{- toYaml $.Values.commonLabels | nindent 4 }}
+  {{- include "as.selectorLabels" $ | nindent 4 }}

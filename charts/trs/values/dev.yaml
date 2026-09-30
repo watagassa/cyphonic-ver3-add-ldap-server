@@ -1,0 +1,69 @@
+commonLabels:
+  app: "trs"
+  env: "dev"
+
+image:
+  repository: "pluslab/cyphonic-trsd"
+
+service:
+  type: LoadBalancer
+  loadBalancerIP: "172.15.7.202"
+  ports:
+    - name: service
+      protocol: UDP
+      port: 4503
+      targetPort: 4503
+  externalTrafficPolicy: Local
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+    - resource:
+        name: cpu
+        target:
+          averageUtilization: 40
+          type: Utilization
+      type: Resource
+  behavior:
+    # 10s で最大1つのレプリカをスケールアップ
+    scaleUp:
+      stabilizationWindowSeconds: 0 # 即時スケールアップ
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 10
+
+    # 10s で最大1つのレプリカをスケールダウン
+    scaleDown:
+      stabilizationWindowSeconds: 5 # 5s で必要レプリカ数まで削減
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 10
+
+limitRange:
+  name: limit-range
+  limits:
+    - type: Container
+      max:
+        cpu: 4
+        memory: 8Gi
+      min:
+        cpu: 100m
+        memory: 100Mi
+      default:
+        memory: 8Gi
+      defaultRequest:
+        cpu: 100m
+        memory: 100Mi
+    - type: Pod
+      max:
+        cpu: 8
+        memory: 16Gi
+      min:
+        cpu: 100m
+        memory: 100Mi
+
+pdb:
+  maxUnavailable: 20%

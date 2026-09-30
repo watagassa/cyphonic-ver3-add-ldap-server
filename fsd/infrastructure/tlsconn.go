@@ -1,0 +1,104 @@
+package infrastructure
+
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
+	"net"
+	"os"
+
+	entity "github.com/Pluslab/cyphonic/fsd/entity"
+	"github.com/Pluslab/cyphonic/fsd/infrastructure/config"
+	"github.com/Pluslab/cyphonic/fsd/usecase/repository"
+)
+
+type tlsListener struct {
+	TLSListener net.Listener
+}
+
+func NewTLSListener(cfg *config.Config, certStore repository.CertificateStore) (repository.TLSListener, error) {
+	tlsConf, err := getTLSConfig(certStore, false)
+	if err != nil {
+		return nil, fmt.Errorf("can't get certificate: %w", err)
+	}
+
+	tlsListen, err := tls.Listen("tcp", fmt.Sprintf(":%s", cfg.TLSPort), tlsConf)
+	if err != nil {
+		return nil, fmt.Errorf("can't listen TLS: %w", err)
+	}
+
+	return &tlsListener{
+		TLSListener: tlsListen,
+	}, nil
+}
+
+func getTLSConfig(certStore repository.CertificateStore, isQUIC bool) (*tls.Config, error) {
+	serverCert := certStore.Get(entity.ServerCert)
+	serverCertPrivKey := certStore.Get(entity.ServerCertPrivKey)
+
+	cert, err := tls.X509KeyPair(serverCert, serverCertPrivKey)
+	if err != nil {
+		return nil, fmt.Errorf("can't load x509 key pair: %w", err)
+	}
+
+	tlsConf := &tls.Config{
+		Rand:                        nil,
+		Time:                        nil,
+		Certificates:                []tls.Certificate{cert},
+		NameToCertificate:           map[string]*tls.Certificate{},
+		GetCertificate:              nil,
+		GetClientCertificate:        nil,
+		GetConfigForClient:          nil,
+		VerifyPeerCertificate:       nil,
+		VerifyConnection:            nil,
+		RootCAs:                     nil,
+		NextProtos:                  []string{},
+		ServerName:                  "",
+		ClientAuth:                  tls.NoClientCert,
+		ClientCAs:                   nil,
+		InsecureSkipVerify:          false,
+		CipherSuites:                []uint16{},
+		PreferServerCipherSuites:    true,
+		SessionTicketsDisabled:      false,
+		SessionTicketKey:            [32]byte{},
+		ClientSessionCache:          nil,
+		MinVersion:                  tls.VersionTLS13,
+		MaxVersion:                  0,
+		CurvePreferences:            []tls.CurveID{},
+		DynamicRecordSizingDisabled: false,
+		Renegotiation:               0,
+		KeyLogWriter:                nil,
+	}
+
+	if isQUIC {
+		CAPool := x509.NewCertPool()
+
+		caCert, err := os.ReadFile(certStore.GetRootCertificateName())
+		if err != nil {
+			return nil, fmt.Errorf("can't load ca certificate: %w", err)
+		}
+
+		if ok := CAPool.AppendCertsFromPEM(caCert); !ok {
+			return nil, errors.New("certificate is not correct")
+		}
+
+		tlsConf.NextProtos = []string{"quic"}
+		tlsConf.ClientCAs = CAPool
+	}
+
+	return tlsConf, nil
+}
+
+func (t *tlsListener) Accept() (net.Conn, error) {
+	conn, err := t.TLSListener.Accept()
+	if err != nil {
+		return nil, fmt.Errorf("can't accept tls listen: %w", err)
+	}
+
+	return conn, nil
+}
+
+func (t *tlsListener) Close() error {
+	return fmt.Errorf("can't close tls listen: %w", t.TLSListener.Close())
+}

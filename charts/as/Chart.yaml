@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cyphonic-as
+description: A Helm chart for cyphonic-as
+type: application
+version: 0.1.0
+sources:
+  - https://github.com/Pluslab/cyphonic/charts/as/

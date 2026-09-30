@@ -1,0 +1,50 @@
+version: "3.8"
+
+name: production
+
+services:
+  as:
+    image: pluslab/cyphonic-asd:latest
+    build:
+      context: .
+      dockerfile: .docker/as/Dockerfile.production
+    container_name: as.local.cyphonic.org
+    privileged: true
+    restart: always
+    tty: true
+    networks:
+      production:
+        ipv4_address: 10.0.3.100
+        ipv6_address: fde4:db8::2
+    ports:
+      - mode: ingress
+        target: 4501
+        protocol: tcp
+
+  trs:
+    image: pluslab/cyphonic-trsd:latest
+    build:
+      context: .
+      dockerfile: .docker/trs/Dockerfile.production
+    container_name: trs01.local.cyphonic.org
+    privileged: true
+    restart: always
+    tty: true
+    networks:
+      production:
+        ipv4_address: 10.0.3.102
+        ipv6_address: fde4:db8::4
+    ports:
+      - mode: ingress
+        target: 4503
+        protocol: udp
+
+networks:
+  production:
+    name: production_cyphonic
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.3.0/24
+        - subnet: fde4:db8::/64
+    enable_ipv6: true

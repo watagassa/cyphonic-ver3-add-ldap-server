@@ -1,0 +1,105 @@
+openapi: "3.0.1"
+info:
+  version: 1.0.0
+  title: CYPHONIC Daemon API Server
+paths:
+  /login:
+    post:
+      summary: Login
+      description: Login to the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  example: adminPassword
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+  /logout:
+    post:
+      summary: Logout
+      description: Logout to the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+  /status:
+    get:
+      summary: Status
+      description: Get the status of the system
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /fqdn:
+    get:
+      summary: FQDN
+      description: Get the FQDN of the system
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FqdnResponse'
+components:
+  schemas:
+    LoginResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Login successful
+    LogoutResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Logout successful
+    StatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: Active
+    FqdnResponse:
+      type: object
+      required:
+        - fqdn
+      properties:
+        fqdn:
+          type: string
+          example: cyphonic-node.pluslab.org

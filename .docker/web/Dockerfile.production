@@ -1,0 +1,29 @@
+FROM node:20.10.0-alpine as deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY ./controller/web/package.json ./controller/web/package-lock.json ./
+RUN npm ci && npm cache clean --force
+
+FROM node:20.10.0-alpine as builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY ./controller/web/ ./
+RUN npm run build
+
+FROM node:20.10.0-alpine as runner
+WORKDIR /app
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+RUN apk add --no-cache tini
+ENTRYPOINT ["/sbin/tini", "--"]
+
+USER nextjs
+EXPOSE 8044
+ENV PORT 8044
+
+CMD ["node", "server.js"]

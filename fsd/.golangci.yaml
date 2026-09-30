@@ -1,0 +1,58 @@
+linters-settings:
+  lll:
+    line-length: 185
+  funlen:
+    lines: 70
+  cyclop:
+    max-complexity: 17
+  gocognit:
+    min-complexity: 40
+  godox:
+    keywords:
+      - NOTE
+      - HACK
+  ireturn:
+    allow:
+      - error
+      - net.Conn
+      - github.com/Pluslab/cyphonic/fsd/controller.Controller
+      - github.com/Pluslab/cyphonic/fsd/usecase.Authentication
+      - github.com/Pluslab/cyphonic/fsd/usecase/repository.PacketHandler
+      - github.com/Pluslab/cyphonic/fsd/usecase/repository.SQLHandler
+      - github.com/Pluslab/cyphonic/fsd/usecase/repository.BucketClient
+      - github.com/Pluslab/cyphonic/fsd/usecase/repository.CertificateStore
+      - github.com/Pluslab/cyphonic/fsd/usecase/repository.TLSListener
+
+run:
+  tests: true
+
+linters:
+  enable-all: true
+  disable:
+    - ifshort
+    - golint
+    - nosnakecase
+    - exhaustivestruct
+    - scopelint
+    - varcheck
+    - interfacer
+    - maligned
+    - deadcode
+    - structcheck
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
+    - revive
+    - gosec
+
+issues:
+  exclude:
+    - "^(G102|G401|G501):"
+  exclude-rules:
+    - linters: [goerr113]
+      text: "do not define dynamic errors, use wrapped static errors instead" # This rule to avoid opinionated check fmt.Errorf("text")
+    - path: '(.+)_test\.go'
+      linters:
+        - maintidx
+        - funlen
+        - dupl

@@ -1,0 +1,17 @@
+{{- with .Values.service }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "trs.name" $ }}
+  namespace: {{ include "trs.name" $ }}
+  labels:
+  {{- toYaml $.Values.commonLabels | nindent 4 }}
+  {{- include "trs.selectorLabels" $ | nindent 4 }}
+spec:
+  type: {{ .type }}
+  loadBalancerIP: {{ .loadBalancerIP }}
+  ports: {{ toYaml .ports | nindent 4 }}
+  selector:
+    app: {{ include "trs.name" $ }}
+  externalTrafficPolicy: {{ .externalTrafficPolicy }}
+{{- end }}

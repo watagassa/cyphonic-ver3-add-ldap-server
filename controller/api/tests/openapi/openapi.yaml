@@ -1,0 +1,329 @@
+openapi: 3.1.0
+
+info:
+  version: 1.0.0
+  title: CYPHONIC cloud software controller
+  description: |
+    - In this content, we are developing a software control API \
+      that can handle the CYPHONIC cloud.
+    - Then, test each API endpoint using OpenAPI and Swagger.
+  contact:
+    name: Pluslab
+    email: r0719en@pluslab.org
+    url: "https://pluslab.org"
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:{port}
+    description: development
+    variables:
+      port:
+        enum:
+          - "80"
+          - "8081"
+        default: "8081"
+  - url: http://controller.local.cyphonic.org
+    description: staging
+
+security:
+  - BasicAuth: []
+
+tags:
+  - name: USER
+    description: Access from user.
+  - name: ADAPTER
+    description: Access from CYPHONIC adapter.
+
+paths:
+  /healthz:
+    get:
+      summary: Health check endpoint test.
+      tags:
+        - USER
+        - ADAPTER
+      responses:
+        "200":
+          description: Endpoints are healthy.
+  /api/adapter/{adapter_id}/children:
+    get:
+      summary: Get child device information by adapter ID.
+      operationId: getChildDeviceInformation
+      tags:
+        - ADAPTER
+      responses:
+        "200":
+          description: Successfully got child device information.
+        "404":
+          description: Endpoint not found.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+      parameters:
+        - name: adapter_id
+          in: path
+          description: Enter adapter ID.
+          required: true
+          schema:
+            type: string
+            example: 2bac8cfcfa0a0e8fe7655cff0fec896866eff52e94efce030be15337
+  /api/device?={device_id}:
+    get:
+      summary: Get device information by device ID.
+      operationId: getDevice
+      tags:
+        - USER
+      responses:
+        "200":
+          description: Successfully got device information.
+        "404":
+          description: Endpoint not found.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+      parameters:
+        - name: device_id
+          in: query
+          description: Enter device ID.
+          required: true
+          schema:
+            type: string
+            example: f6efb4e0355cae5a37ddd58a286d4bcbe6ff4ca585c67cb02f263aa3
+  /api/devices:
+    get:
+      summary: Get all device informations.
+      operationId: getDevices
+      tags:
+        - USER
+      responses:
+        "200":
+          description: Successfully got all device informations.
+        "404":
+          description: Endpoint not found.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+    post:
+      summary: Create device information.
+      operationId: createDevice
+      tags:
+        - USER
+      requestBody:
+        description: new user info
+        required: true
+        content:
+          "application/json":
+            schema:
+              $ref: "#/components/schemas/CreateDeviceInput"
+      responses:
+        "200":
+          description: Successfully create device information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateDeviceOutput"
+        "404":
+          description: Endpoint not found.
+        "415":
+          description: Unsupported media type.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+  /api/general_device?={device_id}:
+    get:
+      summary: Get general device information by device ID.
+      operationId: getGeneralDevice
+      tags:
+        - USER
+      responses:
+        "200":
+          description: Successfully got general device information.
+        "404":
+          description: Endpoint not found.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+      parameters:
+        - name: device_id
+          in: query
+          description: Enter device ID.
+          required: true
+          schema:
+            type: string
+            example: 61df7869c6ea4fca675a6272d25e80cb841d0c4ce1b2b2b7e0815bb2
+  /api/general_devices:
+    get:
+      summary: Get all general device informations.
+      operationId: getGeneralDevices
+      tags:
+        - USER
+      responses:
+        "200":
+          description: Successfully got all general device informations.
+        "404":
+          description: Endpoint not found.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+  /api/account?={account_id}:
+    get:
+      summary: Get account information by account ID.
+      operationId: getAccount
+      tags:
+        - USER
+      responses:
+        "200":
+          description: Successfully got account information.
+        "404":
+          description: Endpoint not found.
+        "500":
+          description: Internal server error.
+        "505":
+          description: HTTP version not supported.
+      parameters:
+        - name: account_id
+          in: query
+          description: Enter your CYPHONIC user account number.
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 1
+
+components:
+  schemas:
+    id:
+      type: integer
+      format: int64
+      example: 1
+    version:
+      type: string
+      example: "1.0"
+    device_id:
+      type: string
+      example: "1f0b1fb5663eb66f0a5155606f91e37f6333263716df86f451a273c0"
+    account_id:
+      type: integer
+      format: int64
+      example: 1
+    device_name:
+      type: string
+      example: test-device
+    fqdn:
+      type: string
+      example: "1f0b1fb5663eb66f0a5155606f91e37f6333263716df86f451a273c0.nms01.local.cyphonic.org"
+    node_management_area_id:
+      type: integer
+      format: int64
+      example: 1
+    device_type:
+      type: integer
+      format: int64
+      example: 1
+    adapter_flag:
+      type: boolean
+      example: false
+    general_node_flag:
+      type: boolean
+      example: false
+    inter_node_certification_flag:
+      type: boolean
+      example: false
+    status:
+      type: integer
+      format: int64
+      example: 0
+    created_at:
+      type: string
+      format: date
+      example: 2023-02-19T21:18:18.193+09:00
+    updated_at:
+      type: string
+      format: date
+      example: 2023-02-19T21:18:18.193+09:00
+    CreateDeviceInput:
+      type: object
+      required:
+        - version
+        - device_id
+        - account_id
+        - device_name
+        - fqdn
+        - node_management_area_id
+        - device_type
+        - adapter_flag
+        - general_node_flag
+        - inter_node_certification_flag
+        - status
+      properties:
+        version:
+          $ref: "#/components/schemas/version"
+        device_id:
+          $ref: "#/components/schemas/device_id"
+        account_id:
+          $ref: "#/components/schemas/account_id"
+        device_name:
+          $ref: "#/components/schemas/device_name"
+        fqdn:
+          $ref: "#/components/schemas/fqdn"
+        node_management_area_id:
+          $ref: "#/components/schemas/node_management_area_id"
+        device_type:
+          $ref: "#/components/schemas/device_type"
+        adapter_flag:
+          $ref: "#/components/schemas/adapter_flag"
+        general_node_flag:
+          $ref: "#/components/schemas/general_node_flag"
+        inter_node_certification_flag:
+          $ref: "#/components/schemas/inter_node_certification_flag"
+        status:
+          $ref: "#/components/schemas/status"
+    CreateDeviceOutput:
+      type: object
+      required:
+        - version
+        - device_id
+        - account_id
+        - device_name
+        - fqdn
+        - node_management_area_id
+        - device_type
+        - adapter_flag
+        - general_node_flag
+        - inter_node_certification_flag
+        - status
+      properties:
+        id:
+          $ref: "#/components/schemas/id"
+        version:
+          $ref: "#/components/schemas/version"
+        device_id:
+          $ref: "#/components/schemas/device_id"
+        account_id:
+          $ref: "#/components/schemas/account_id"
+        device_name:
+          $ref: "#/components/schemas/device_name"
+        fqdn:
+          $ref: "#/components/schemas/fqdn"
+        node_management_area_id:
+          $ref: "#/components/schemas/node_management_area_id"
+        device_type:
+          $ref: "#/components/schemas/device_type"
+        adapter_flag:
+          $ref: "#/components/schemas/adapter_flag"
+        general_node_flag:
+          $ref: "#/components/schemas/general_node_flag"
+        inter_node_certification_flag:
+          $ref: "#/components/schemas/inter_node_certification_flag"
+        status:
+          $ref: "#/components/schemas/status"
+        created_at:
+          $ref: "#/components/schemas/created_at"
+        updated_at:
+          $ref: "#/components/schemas/updated_at"

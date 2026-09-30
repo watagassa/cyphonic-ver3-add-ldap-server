@@ -1,0 +1,71 @@
+name: u-trs-reviewdog
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+      - "!dependabot/**"
+    paths:
+      - ".github/workflows/u-trs-reviewdog.yaml"
+      - "u-trsd/**"
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
+      - "feature/**"
+      - "hotfix/**"
+      - "**"
+      - "!dependabot/**"
+    paths:
+      - ".github/workflows/u-trs-reviewdog.yaml"
+      - "u-trsd/**"
+
+env:
+  GO111MODULE: on
+
+jobs:
+  reviewdog:
+    name: Set up
+    runs-on: ubuntu-latest
+    # https://github.blog/changelog/2021-02-19-github-actions-workflows-triggered-by-dependabot-prs-will-run-with-read-only-permissions/
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Get dependencies
+        run: |
+          cd u-trsd
+          go install ./...
+
+      - name: Install golint, errcheck, gofumpt
+        run: |
+          go install golang.org/x/lint/golint@latest
+          go install github.com/kisielk/errcheck@latest
+          go install mvdan.cc/gofumpt@latest
+
+      - uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: Run reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd u-trsd
+          reviewdog -conf=.reviewdog.yaml -reporter=github-pr-review -runners=golint,govet,errcheck -fail-on-error
+
+      - name: gofumpt -s with reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd u-trsd
+          gofumpt -s -d . | reviewdog -conf=.reviewdog.yaml -name="gofumpt" -f=diff -f.diff.strip=0 -reporter=github-pr-review

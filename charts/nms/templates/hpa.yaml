@@ -1,0 +1,19 @@
+{{- with .Values.hpa }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "nms.name" $ }}
+  namespace: {{ include "nms.name" $ }}
+  labels:
+  {{- toYaml $.Values.commonLabels | nindent 4 }}
+  {{- include "nms.selectorLabels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "nms.name" $ }}
+  minReplicas: {{ .minReplicas }}
+  maxReplicas: {{ .maxReplicas }}
+  metrics: {{ toYaml .metrics | nindent 4 }}
+  behavior: {{ toYaml .behavior | nindent 4 }}
+{{- end }}

@@ -1,0 +1,144 @@
+nameOverride: "as"
+
+configMap:
+  env:
+    name: env
+    data:
+      FQDN: "as.local.cyphonic.org"
+      PORT: "4501"
+      DATABASE_HOST: "cockroachdb-svc-internal.cockroachdb.svc.cluster.local"
+      DATABASE_NAME: "cyphonic"
+      DATABASE_PORT: "26257"
+      DATABASE_SSL_MODE: "disable"
+      DATABASE_TIME_ZONE: "Asia/Tokyo"
+      ROOT_CERTIFICATE_NAME: "ca.pem"
+      REGION: "ap-northeast-1"
+      END_POINT: "https://minio.minio-tenant-cyphonic-bucket-provider.svc.cluster.local"
+      BUCKET_NAME: "as-certificate"
+      CERTIFICATE_LOCATION: "remote"
+      DEBUG_MODE: "false"
+      DB_DEBUG_MODE: "false"
+
+secret:
+  name: env
+  type: Opaque
+  data:
+    DATABASE_USER: Y3lwaG9uaWM=
+    ACCESS_KEY: YWRtaW4=
+    SECRET_KEY: Y3lwaG9uaWMyMDIz
+
+deployment:
+  revisionHistoryLimit: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 0
+  terminationGracePeriodSeconds: 75
+  containers:
+    as:
+      name: as
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 4502
+      resources:
+        limits:
+          cpu: 1
+          memory: 1Gi
+        requests:
+          cpu: 1
+          memory: 1Gi
+      ### TODO: implement graceful shutdown.
+      # startupProbe:
+      #   httpGet:
+      #     path: /api/v1/healthz
+      #     port: 8082
+      #   initialDelaySeconds: 5
+      #   periodSeconds: 2
+      #   timeoutSeconds: 3
+      #   successThreshold: 1
+      #   failureThreshold: 20
+      # readinessProbe:
+      #   httpGet:
+      #     path: /api/v1/healthz
+      #     port: 8082
+      #   initialDelaySeconds: 1
+      #   periodSeconds: 5
+      #   timeoutSeconds: 3
+      #   successThreshold: 1
+      #   failureThreshold: 2
+      # livenessProbe:
+      #   httpGet:
+      #     path: /api/v1/healthz
+      #     port: 8082
+      #   initialDelaySeconds: 1
+      #   periodSeconds: 5
+      #   timeoutSeconds: 3
+      #   successThreshold: 1
+      #   failureThreshold: 2
+      lifecycle:
+        preStop:
+          exec:
+            command: ["sleep", "30"]
+      ### Specify log storage destination. => Transfer to ElasticSearch via Fluentd.
+      # volumeMounts:
+      #   - name: varlog
+      #     mountPath: /var/log
+      envFrom:
+        - configMapRef:
+            name: env
+        - secretRef:
+            name: env
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 99
+  metrics:
+    - resource:
+        name: cpu
+        target:
+          averageUtilization: 80
+          type: Utilization
+      type: Resource
+  behavior:
+    # 10s で最大1つのレプリカをスケールアップ
+    scaleUp:
+      stabilizationWindowSeconds: 0 # 即時スケールアップ
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 10
+
+    # 10s で最大1つのレプリカをスケールダウン
+    scaleDown:
+      stabilizationWindowSeconds: 5 # 5s で必要レプリカ数まで削減
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 10
+
+limitRange:
+  name: limit-range
+  limits:
+    - type: Container
+      max:
+        cpu: 1
+        memory: 1Gi
+      min:
+        cpu: 500m
+        memory: 500Mi
+      default:
+        memory: 1Gi
+      defaultRequest:
+        cpu: 500m
+        memory: 500Mi
+    - type: Pod
+      max:
+        cpu: 8
+        memory: 16Gi
+      min:
+        cpu: 500m
+        memory: 500Mi
+
+pdb:
+  maxUnavailable: 20%

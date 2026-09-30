@@ -1,0 +1,16 @@
+{{- with .Values.pdb }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "as.name" $ }}
+  namespace: {{ include "as.name" $ }}
+  labels:
+  {{- toYaml $.Values.commonLabels | nindent 4 }}
+  {{- include "as.selectorLabels" $ | nindent 4 }}
+spec:
+  maxUnavailable: {{ .maxUnavailable }}
+  selector:
+    matchLabels:
+    {{- toYaml $.Values.commonLabels | nindent 6 }}
+    {{- include "as.selectorLabels" $ | nindent 6 }}
+{{- end }}

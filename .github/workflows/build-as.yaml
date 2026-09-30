@@ -1,0 +1,131 @@
+name: build-as
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: "Environment."
+        required: true
+        options:
+          - dev
+          - stg
+
+defaults:
+  run:
+    working-directory: .
+
+env:
+  TZ: "Asia/Tokyo"
+  IMAGE_TAG: ${{ github.sha }}
+  APPLICATION_NAME: cyphonic-asd
+  ENVIRONMENT_NAME: ${{ github.event.inputs.environment }}
+  IMAGE_REGISTRY: pluslab
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to DockerHub
+        id: dockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: asd image build and push
+        run: docker build -t $APPLICATION_NAME -f .docker/as/Dockerfile.production .
+      - name: Tag and push image to DockerHub
+        run: |
+          docker tag $APPLICATION_NAME $IMAGE_REGISTRY/$APPLICATION_NAME:$IMAGE_TAG
+          docker push $IMAGE_REGISTRY/$APPLICATION_NAME:$IMAGE_TAG
+
+  change-image-tag:
+    runs-on: ubuntu-latest
+    env:
+      PR_LABEL: image-tag
+      BASE_BRANCH: develop
+      SLACK_CHANNEL_IDS: notify-cyphonic
+      APPLICATION_GITHUB_URL: https://github.com/Pluslab/cyphonic.git
+      ACTIONS_USER_NAME: "41898282+github-actions[bot]@users.noreply.github.com"
+      ACTIONS_USER_EMAIL: "github-actions[bot]"
+    if: success()
+    needs: build-image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+      - name: Setup env
+        run: |
+          echo "WORK_BRANCH_NAME=admin/$APPLICATION_NAME/$(date "+%Y%m%d%H%M%S")" >> $GITHUB_ENV
+      - name: Update asd manifest file
+        run: |
+          git config user.name  $ACTIONS_USER_NAME
+          git config user.email $ACTIONS_USER_EMAIL
+          git checkout -b $WORK_BRANCH_NAME
+          sed -i -e "s/\(tag\: \).*/\1$IMAGE_TAG/" ./charts/as/values/${ENVIRONMENT_NAME}-image-tag.yaml
+          git add -u
+          git commit -m "Update $ENVIRONMENT_NAME $APPLICATION_NAME image tag (by $GITHUB_ACTOR)."
+      - name: Push to GitHub & Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY
+          gh pr create -l $PR_LABEL -B $BASE_BRANCH -H $WORK_BRANCH_NAME -t "Update $ENVIRONMENT_NAME $APPLICATION_NAME image tag (by $GITHUB_ACTOR)." -b "Created by Github Actions ($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
+      - name: PR auto merge
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_RIGHTS_TOKEN }}
+        run: |
+          gh pr merge --admin --merge --delete-branch
+      - name: Setup notification parameters on success
+        if: success()
+        run: echo "NOTIFICATION_COLOR=#36a64f" >> $GITHUB_ENV
+      - name: Setup notification parameters on failure
+        if: failure()
+        run: echo "NOTIFICATION_COLOR=#951e13" >> $GITHUB_ENV
+      - name: Notify to Slack
+        uses: slackapi/slack-github-action@v2.0.0
+        if: always()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL_IDS }}
+          payload: |
+            {
+              "text": "Workflow <${{ env.GITHUB_RUN_URL }}|${{ github.workflow }}@${{ github.repository }}> finished on ${{ job.status }}.",
+              "attachments": [
+                {
+                  "color": "${{ env.NOTIFICATION_COLOR }}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*APPLICATION:*\n${{ env.APPLICATION_NAME }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*ENVIRONMENT:*\n${{ env.ENVIRONMENT_NAME }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Trigger by:*\n@${{ github.triggering_actor }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*IMAGE_TAG:*\n<${{ env.APPLICATION_GITHUB_URL }}/tree/${{ env.IMAGE_TAG }}|${{ env.IMAGE_TAG }}>"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cyphonic-nms
+description: A Helm chart for cyphonic-nms
+type: application
+version: 0.1.0
+sources:
+  - https://github.com/Pluslab/cyphonic/charts/nms/

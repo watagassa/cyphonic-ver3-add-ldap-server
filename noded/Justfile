@@ -1,0 +1,32 @@
+[private]
+@default: help
+
+# show help message
+@help:
+    echo "Usage: just <recipe>"
+    echo ""
+    just --list
+
+# go test
+@test:
+    go test -v ./...
+
+# golangci-lint
+@lint:
+    golangci-lint run ./...
+
+# go build
+@build:
+    go build -o ./bin/cyphonic ./cmd
+
+# go run
+@run:
+    go run ./cmd run
+
+# openapi generator
+@openapi:
+    oapi-codegen -config ./openapi/config.yaml openapi/openapi.yaml
+
+# swagger ui
+@swagger:
+    docker run -p 38081:8080 -e SWAGGER_JSON=/tmp/cyphonic.yaml -v $(pwd)/openapi/openapi.yaml:/tmp/cyphonic.yaml swaggerapi/swagger-ui

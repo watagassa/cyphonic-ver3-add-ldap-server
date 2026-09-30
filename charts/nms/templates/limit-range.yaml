@@ -1,0 +1,10 @@
+{{- with .Values.limitRange }}
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ .name }}
+  namespace: {{ include "nms.name" $ }}
+  labels: {{ include "nms.selectorLabels" $ | nindent 4 }}
+spec:
+  limits: {{ toYaml .limits | nindent 4 }}
+{{- end }}

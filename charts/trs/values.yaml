@@ -1,0 +1,115 @@
+nameOverride: "trs"
+
+configMap:
+  env:
+    name: env
+    data:
+      FQDN: "trs01.local.cyphonic.org"
+      INTERFACE_NAME: "eth0"
+      TRS_IPV4: "172.16.7.202" ## Specify the IP address of the service (ClusterIP)
+      TRS_IPV6: "fde4:db8::4" ## This field is useless in current Kubernetes cluster
+      PORT: "4503"
+      NMS_PORT: "4502"
+      DATABASE_HOST: "cockroachdb-svc-internal.cockroachdb.svc.cluster.local"
+      DATABASE_NAME: "cyphonic"
+      DATABASE_PORT: "26257"
+      DATABASE_SSL_MODE: "disable"
+      DATABASE_TIME_ZONE: "Asia/Tokyo"
+      CACHE_HOST: "redis-svc-internal.redis.svc.cluster.local:6379"
+      CACHE_CLUSTER_MODE: "true"
+      DEBUG_MODE: "false"
+      DB_DEBUG_MODE: "false"
+
+secret:
+  name: env
+  type: Opaque
+  data:
+    DATABASE_USER: Y3lwaG9uaWM=
+
+deployment:
+  revisionHistoryLimit: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 0
+  terminationGracePeriodSeconds: 75
+  containers:
+    trs:
+      name: trs
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 4503
+      resources:
+        limits:
+          cpu: 1
+          memory: 1Gi
+        requests:
+          cpu: 1
+          memory: 1Gi
+      lifecycle:
+        preStop:
+          exec:
+            command: ["sleep", "30"]
+      ### Specify log storage destination. => Transfer to ElasticSearch via Fluentd.
+      # volumeMounts:
+      #   - name: varlog
+      #     mountPath: /var/log
+      envFrom:
+        - configMapRef:
+            name: env
+        - secretRef:
+            name: env
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 99
+  metrics:
+    - resource:
+        name: cpu
+        target:
+          averageUtilization: 80
+          type: Utilization
+      type: Resource
+  behavior:
+    # 10s で最大1つのレプリカをスケールアップ
+    scaleUp:
+      stabilizationWindowSeconds: 0 # 即時スケールアップ
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 10
+
+    # 10s で最大1つのレプリカをスケールダウン
+    scaleDown:
+      stabilizationWindowSeconds: 5 # 5s で必要レプリカ数まで削減
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 10
+
+limitRange:
+  name: limit-range
+  limits:
+    - type: Container
+      max:
+        cpu: 1
+        memory: 1Gi
+      min:
+        cpu: 500m
+        memory: 500Mi
+      default:
+        memory: 1Gi
+      defaultRequest:
+        cpu: 500m
+        memory: 500Mi
+    - type: Pod
+      max:
+        cpu: 8
+        memory: 16Gi
+      min:
+        cpu: 500m
+        memory: 500Mi
+
+pdb:
+  maxUnavailable: 20%

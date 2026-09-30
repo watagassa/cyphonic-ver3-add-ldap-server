@@ -1,0 +1,860 @@
+name: cyphonic
+
+services:
+  ### cockroach container
+  cockroach:
+    build:
+      context: ./.docker/db
+      dockerfile: Dockerfile
+    container_name: cockroach.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+      LANG: C.UTF-8
+      COCKROACH_HOST: cockroach
+      COCKROACH_DATABASE: cyphonic
+      COCKROACH_USER: cyphonic
+      COCKROACH_PORT: 26257
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.100
+        ipv6_address: fde4:db8::100
+    ports:
+      - mode: ingress
+        target: 26257
+        protocol: tcp
+      - mode: ingress
+        target: 8080
+        published: 8080
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: volume
+        source: cockroachdb
+        target: /var/lib/cockroach
+        volume: {}
+      - type: bind
+        source: ./.docker/db/init.d
+        target: /docker-entrypoint-initdb.d
+        bind:
+          create_host_path: true
+    command: "start-single-node --insecure && init --host=$$COCKROACH_HOST:$$COCKROACH_PORT --insecure"
+    healthcheck:
+      test: [ "CMD", "curl", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+
+  ### asd container
+  as:
+    build:
+      context: ./.docker/as
+      dockerfile: Dockerfile
+    container_name: as.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: AS
+      FQDN: "as.local.cyphonic.org"
+      TLS_PORT: "4501"
+      QUIC_PORT: "443"
+      DATABASE_HOST: "cockroach"
+      DATABASE_NAME: "cyphonic"
+      DATABASE_USER: "cyphonic"
+      DATABASE_PORT: "26257"
+      DATABASE_SSL_MODE: "disable"
+      DATABASE_TIME_ZONE: "Asia/Tokyo"
+      ROOT_CERTIFICATE_NAME: "ca.pem"
+      ACCESS_KEY: "admin"
+      SECRET_KEY: "cyphonic2023"
+      REGION: "ap-northeast-1"
+      END_POINT: "https://10.10.10.91"
+      BUCKET_NAME: "as-certificate"
+      CERTIFICATE_LOCATION: "local" # "local" or "remote"
+      ACCESS_SECRET_KEY: ACCESS_SECRET_KEY
+      PS_FQDN: ps.local.cyphonic.org
+      PS_TLS_PORT: 4502
+      PS_QUIC_PORT: 443
+      CMS_FQDN: cms.local.cyphonic.org
+      CMS_TLS_PORT: 4503
+      CMS_QUIC_PORT: 443
+      DEBUG_LOG_FILE_PATH: "/var/log/as-debug.json"
+      ERROR_LOG_FILE_PATH: "/var/log/as-error.json"
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.110
+        ipv6_address: fde4:db8::110
+    ports:
+      - mode: ingress
+        target: 4501
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./asd
+        target: /go/src/github.com/Pluslab/cyphonic/asd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/asd
+
+  ### psd container
+  ps:
+    build:
+      context: ./.docker/ps
+      dockerfile: Dockerfile
+    container_name: ps.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: PS
+      FQDN: "ps.local.cyphonic.org"
+      TLS_PORT: "4502"
+      QUIC_PORT: "443"
+      DATABASE_HOST: "cockroach"
+      DATABASE_NAME: "cyphonic"
+      DATABASE_USER: "cyphonic"
+      DATABASE_PORT: "26257"
+      DATABASE_SSL_MODE: "disable"
+      DATABASE_TIME_ZONE: "Asia/Tokyo"
+      ROOT_CERTIFICATE_NAME: "ca.pem"
+      ACCESS_KEY: "admin"
+      SECRET_KEY: "cyphonic2023"
+      REGION: "ap-northeast-1"
+      END_POINT: "https://10.10.10.91"
+      BUCKET_NAME: "ps-certificate"
+      CERTIFICATE_LOCATION: "local" # "local" or "remote"
+      ACCESS_SECRET_KEY: ACCESS_SECRET_KEY
+      VIRTUAL_IP_VERSION: 4
+      DEBUG_LOG_FILE_PATH: "/var/log/ps-debug.json"
+      ERROR_LOG_FILE_PATH: "/var/log/ps-error.json"
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.120
+        ipv6_address: fde4:db8::120
+    ports:
+      - mode: ingress
+        target: 4502
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./psd
+        target: /go/src/github.com/Pluslab/cyphonic/psd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/psd
+
+  ### cmsd container
+  cms:
+    build:
+      context: ./.docker/cms
+      dockerfile: Dockerfile
+    container_name: cms.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: "CMS"
+      FQDN: "cms.local.cyphonic.org"
+      TLS_PORT: "4503"
+      QUIC_PORT: "443"
+      DATABASE_HOST: "cockroach"
+      DATABASE_NAME: "cyphonic"
+      DATABASE_USER: "cyphonic"
+      DATABASE_PORT: "26257"
+      DATABASE_SSL_MODE: "disable"
+      DATABASE_TIME_ZONE: "Asia/Tokyo"
+      ROOT_CERTIFICATE_NAME: "ca.pem"
+      ACCESS_KEY: "admin"
+      SECRET_KEY: "cyphonic2023"
+      REGION: "ap-northeast-1"
+      END_POINT: "https://10.10.10.91"
+      BUCKET_NAME: "as-certificate"
+      CERTIFICATE_LOCATION: "local" # "local" or "remote"
+      ACCESS_SECRET_KEY: "ACCESS_SECRET_KEY"
+      DEBUG_LOG_FILE_PATH: "/var/log/cms-debug.json"
+      ERROR_LOG_FILE_PATH: "/var/log/cms-error.json"
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.130
+        ipv6_address: fde4:db8::130
+    ports:
+      - mode: ingress
+        target: 4503
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./cmsd
+        target: /go/src/github.com/Pluslab/cyphonic/cmsd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/cmsd
+
+
+  ### u-nsd container
+  u-ns:
+    build:
+      context: ./.docker/u-ns
+      dockerfile: Dockerfile
+    container_name: u-ns01.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: U-NS
+      FQDN: u-ns01.local.cyphonic.org
+      PORT: 4504
+      NS_IPV4: 10.0.3.140
+      NS_IPV6: fde4:db8::140
+      DS_IPV4: 10.0.3.160
+      DS_IPV6: fde4:db8::160
+      DS_FQDN: ds.local.cyphonic.org
+      DS_PORT: 4506
+      DATABASE_HOST: cockroach
+      DATABASE_NAME: cyphonic
+      DATABASE_USER: cyphonic
+      DATABASE_PORT: 26257
+      DATABASE_SSL_MODE: disable
+      DATABASE_TIME_ZONE: Asia/Tokyo
+      DEBUG_LOG_FILE_PATH: /var/log/cyphonic/u-ns-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/cyphonic/u-ns-error.json
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.140
+        ipv6_address: fde4:db8::140
+    ports:
+      - mode: ingress
+        target: 4504
+        protocol: udp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./u-nsd
+        target: /go/src/github.com/Pluslab/cyphonic/u-nsd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/u-nsd
+
+  ### dsd container
+  ds:
+    build:
+      context: ./.docker/ds
+      dockerfile: Dockerfile
+    container_name: ds.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: DS
+      FQDN: ds.local.cyphonic.org
+      PORT: 4506
+      DATABASE_USER: cyphonic
+      DATABASE_HOST: cockroach
+      DATABASE_PORT: 26257
+      DATABASE_NAME: cyphonic
+      DATABASE_SSL_MODE: disable
+      DATABASE_TIME_ZONE: Asia/Tokyo
+      REDIS_ADDRESSES: hoge
+      DEBUG_LOG_FILE_PATH: /var/log/cyphonic/ds-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/cyphonic/ds-error.json
+      CACHE_CLUSTER_MODE: false
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.160
+        ipv6_address: fde4:db8::160
+    ports:
+      - mode: ingress
+        target: 4506
+        protocol: udp
+        published: 4506
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./dsd
+        target: /go/src/github.com/Pluslab/cyphonic/dsd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/dsd
+
+  ### u-trsd container
+  u-trs:
+    build:
+      context: ./.docker/u-trs
+      dockerfile: Dockerfile
+    container_name: u-trs01.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: U-TRS
+      FQDN: u-trs01.local.cyphonic.org
+      PORT: 4507
+      TRS_IPV4: 10.0.3.170
+      TRS_IPV6: fde4:db8::170
+      DATABASE_HOST: cockroach
+      DATABASE_NAME: cyphonic
+      DATABASE_USER: cyphonic
+      DATABASE_PORT: 26257
+      DATABASE_SSL_MODE: disable
+      DATABASE_TIME_ZONE: Asia/Tokyo
+      DEBUG_LOG_FILE_PATH: /var/log/cyphonic/u-trs-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/cyphonic/u-trs-error.json
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+      INSTANCE_REGISTRATION: true
+      INTERFACE_NAME: eth0
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.170
+        ipv6_address: fde4:db8::170
+    ports:
+      - mode: ingress
+        target: 4507
+        protocol: udp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./u-trsd
+        target: /go/src/github.com/Pluslab/cyphonic/u-trsd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/u-trsd
+
+
+  ### fsd container
+  fs:
+    build:
+      context: ./.docker/fs
+      dockerfile: Dockerfile
+    container_name: fs.local.cyphonic.org
+    environment:
+      SERVICE_TYPE: FS
+      FQDN: "fs.local.cyphonic.org"
+      TLS_PORT: "4510"
+      QUIC_PORT: "443"
+      DATABASE_HOST: "cockroach"
+      DATABASE_NAME: "cyphonic"
+      DATABASE_USER: "cyphonic"
+      DATABASE_PORT: "26257"
+      DATABASE_SSL_MODE: "disable"
+      DATABASE_TIME_ZONE: "Asia/Tokyo"
+      ROOT_CERTIFICATE_NAME: "ca.pem"
+      ACCESS_KEY: "admin"
+      SECRET_KEY: "cyphonic2023"
+      REGION: "ap-northeast-1"
+      END_POINT: "https://10.10.10.91"
+      BUCKET_NAME: "fs-certificate"
+      CERTIFICATE_LOCATION: "local" # "local" or "remote"
+      ACCESS_SECRET_KEY: ACCESS_SECRET_KEY
+      DEBUG_LOG_FILE_PATH: "/var/log/ps-debug.json"
+      ERROR_LOG_FILE_PATH: "/var/log/ps-error.json"
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.200
+        ipv6_address: fde4:db8::200
+    ports:
+      - mode: ingress
+        target: 4510
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./fsd
+        target: /go/src/github.com/Pluslab/cyphonic/fsd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/fsd
+
+  ### node01 container
+  node:
+    build:
+      context: ./.docker/node
+      dockerfile: Dockerfile
+    container_name: node.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+      AUTHENTICATION_SERVICE_HOST: as.local.cyphonic.org
+      AUTHENTICATION_SERVICE_PORT: 4501
+      AUTHENTICATION_SERVICE_CA_FILE_PATH: ca.pem
+      SELF_DESIRED_FQDN: test-self-desired-fqdn.cyphonic.org
+      SERVICE_TYPE: NODE
+      DEBUG_MODE: true
+      ROUTE_OPTIMIZATION_MODE: true
+      KEEP_ALIVE_INTERVAL_SECONDS: 5
+      KEEP_ALIVE_ACK_TIMEOUT_SECONDS: 5
+      DEBUG_LOG_FILE_PATH: /var/log/node-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/node-error.json
+      TUN_INTERFACE_NAME: cyp_tun
+      TUN_DNS_INTERFACE_NAME: cyp_dns
+      TUN_DNS_INTERFACE_IPv6: 2003::88
+      TUN_DNS_INTERFACE_IPv4: 203.0.113.1
+      VIRTUAL_IP_TYPE: 4
+      API_PORT: 8081
+      NODE_PORT: 30000
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.102
+        ipv6_address: fde4:db8::4
+    ports:
+      - mode: ingress
+        target: 4501
+        protocol: tcp
+      - mode: ingress
+        target: 4502
+        protocol: udp
+      - mode: ingress
+        target: 4503
+        protocol: udp
+      - mode: ingress
+        target: 8081
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "0"
+    volumes:
+      - type: bind
+        source: ./asd
+        target: /go/src/github.com/Pluslab/cyphonic/asd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./noded
+        target: /go/src/github.com/Pluslab/cyphonic/noded
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./ops
+        target: /go/src/github.com/Pluslab/cyphonic/ops
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/noded
+
+  ### node02 container
+  node2:
+    build:
+      context: ./.docker/node
+      dockerfile: Dockerfile
+    container_name: node2.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+      AUTHENTICATION_SERVICE_HOST: as.local.cyphonic.org
+      AUTHENTICATION_SERVICE_PORT: 4501
+      AUTHENTICATION_SERVICE_CA_FILE_PATH: ca.pem
+      SELF_DESIRED_FQDN: test-self-desired-fqdn.cyphonic.org
+      SERVICE_TYPE: NODE
+      DEBUG_MODE: true
+      ROUTE_OPTIMIZATION_MODE: true
+      KEEP_ALIVE_INTERVAL_SECONDS: 5
+      KEEP_ALIVE_ACK_TIMEOUT_SECONDS: 5
+      DEBUG_LOG_FILE_PATH: /var/log/node-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/node-error.json
+      TUN_INTERFACE_NAME: cyp_tun
+      TUN_DNS_INTERFACE_NAME: cyp_dns
+      TUN_DNS_INTERFACE_IPv6: 2003::88
+      TUN_DNS_INTERFACE_IPv4: 203.0.113.1
+      VIRTUAL_IP_TYPE: 4
+      API_PORT: 8081
+      NODE_PORT: 30000
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.103
+        ipv6_address: fde4:db8::5
+    ports:
+      - mode: ingress
+        target: 4501
+        protocol: tcp
+      - mode: ingress
+        target: 4502
+        protocol: udp
+      - mode: ingress
+        target: 4503
+        protocol: udp
+      - mode: ingress
+        target: 8081
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "0"
+    volumes:
+      - type: bind
+        source: ./asd
+        target: /go/src/github.com/Pluslab/cyphonic/asd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./noded
+        target: /go/src/github.com/Pluslab/cyphonic/noded
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/noded
+
+  ### node03 container
+  node3:
+    build:
+      context: ./.docker/node
+      dockerfile: Dockerfile
+    container_name: node3.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+      AUTHENTICATION_SERVICE_HOST: as.local.cyphonic.org
+      AUTHENTICATION_SERVICE_PORT: 4501
+      AUTHENTICATION_SERVICE_CA_FILE_PATH: ca.pem
+      SELF_DESIRED_FQDN: test-self-desired-fqdn.cyphonic.org
+      SERVICE_TYPE: NODE
+      DEBUG_MODE: true
+      ROUTE_OPTIMIZATION_MODE: true
+      KEEP_ALIVE_INTERVAL_SECONDS: 5
+      KEEP_ALIVE_ACK_TIMEOUT_SECONDS: 5
+      DEBUG_LOG_FILE_PATH: /var/log/node-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/node-error.json
+      TUN_INTERFACE_NAME: cyp_tun
+      TUN_DNS_INTERFACE_NAME: cyp_dns
+      TUN_DNS_INTERFACE_IPv6: 2003::88
+      TUN_DNS_INTERFACE_IPv4: 203.0.113.1
+      VIRTUAL_IP_TYPE: 4
+      API_PORT: 8081
+      NODE_PORT: 30000
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.104
+        ipv6_address: fde4:db8::6
+    ports:
+      - mode: ingress
+        target: 4501
+        protocol: tcp
+      - mode: ingress
+        target: 4502
+        protocol: udp
+      - mode: ingress
+        target: 4503
+        protocol: udp
+      - mode: ingress
+        target: 8081
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "0"
+    volumes:
+      - type: bind
+        source: ./asd
+        target: /go/src/github.com/Pluslab/cyphonic/asd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./noded
+        target: /go/src/github.com/Pluslab/cyphonic/noded
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/noded
+
+  ### node04 container
+  node4:
+    build:
+      context: ./.docker/node
+      dockerfile: Dockerfile
+    container_name: node4.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+      AUTHENTICATION_SERVICE_HOST: as.local.cyphonic.org
+      AUTHENTICATION_SERVICE_PORT: 4501
+      AUTHENTICATION_SERVICE_CA_FILE_PATH: ca.pem
+      SELF_DESIRED_FQDN: test-self-desired-fqdn.cyphonic.org
+      SERVICE_TYPE: NODE
+      DEBUG_MODE: true
+      ROUTE_OPTIMIZATION_MODE: true
+      KEEP_ALIVE_INTERVAL_SECONDS: 5
+      KEEP_ALIVE_ACK_TIMEOUT_SECONDS: 5
+      DEBUG_LOG_FILE_PATH: /var/log/node-debug.json
+      ERROR_LOG_FILE_PATH: /var/log/node-error.json
+      TUN_INTERFACE_NAME: cyp_tun
+      TUN_DNS_INTERFACE_NAME: cyp_dns
+      TUN_DNS_INTERFACE_IPv6: 2003::88
+      TUN_DNS_INTERFACE_IPv4: 203.0.113.1
+      VIRTUAL_IP_TYPE: 4
+      API_PORT: 8081
+      NODE_PORT: 30000
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.105
+        ipv6_address: fde4:db8::7
+    ports:
+      - mode: ingress
+        target: 4501
+        protocol: tcp
+      - mode: ingress
+        target: 4502
+        protocol: udp
+      - mode: ingress
+        target: 4503
+        protocol: udp
+      - mode: ingress
+        target: 8081
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "0"
+    volumes:
+      - type: bind
+        source: ./asd
+        target: /go/src/github.com/Pluslab/cyphonic/asd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./noded
+        target: /go/src/github.com/Pluslab/cyphonic/noded
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/noded
+
+  ### prometheus container
+  prometheus:
+    build:
+      context: ./.docker/prometheus
+      dockerfile: ./Dockerfile
+    container_name: prometheus.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.106
+        ipv6_address: fde4:db8::8
+    ports:
+      - mode: ingress
+        target: 9090
+        published: "9090"
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    volumes:
+      - type: bind
+        source: ./.docker/prometheus/prometheus.yaml
+        target: /etc/prometheus/prometheus.yml
+        bind:
+          create_host_path: true
+
+  ### grafana container
+  grafana:
+    build:
+      context: ./.docker/grafana
+      dockerfile: ./Dockerfile
+    container_name: grafana.local.cyphonic.org
+    environment:
+      TZ: Asia/Tokyo
+      GF_SECURITY_ADMIN_PASSWORD: password
+      GF_SECURITY_ADMIN_USER: cyphonic
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_SERVER_PROTOCOL: http
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.107
+        ipv6_address: fde4:db8::9
+    ports:
+      - mode: ingress
+        target: 3000
+        published: "3000"
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+
+  ### ops container
+  ops:
+    build:
+      context: ./.docker/as
+      dockerfile: Dockerfile
+    container_name: ops.local.cyphonic.org
+    tty: true
+    depends_on:
+      cockroach:
+        condition: service_healthy
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.108
+        ipv6_address: fde4:db8::10
+    volumes:
+      - type: bind
+        source: ./ops
+        target: /go/src/github.com/Pluslab/cyphonic/ops
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./asd
+        target: /go/src/github.com/Pluslab/cyphonic/asd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./noded
+        target: /go/src/github.com/Pluslab/cyphonic/noded
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./cmsd
+        target: /go/src/github.com/Pluslab/cyphonic/cmsd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./psd
+        target: /go/src/github.com/Pluslab/cyphonic/psd
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./fsd
+        target: /go/src/github.com/Pluslab/cyphonic/fsd
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/ops
+
+  ### controller api container
+  controller:
+    build:
+      context: ./.docker/controller
+      dockerfile: Dockerfile
+    container_name: controller.local.cyphonic.org
+    environment:
+      FQDN: controller.local.cyphonic.org
+      PORT: 8081
+      DATABASE_HOST: cockroach
+      DATABASE_NAME: cyphonic
+      DATABASE_USER: cyphonic
+      DATABASE_PORT: 26257
+      DATABASE_SSL_MODE: disable
+      DATABASE_TIME_ZONE: Asia/Tokyo
+      DEBUG_MODE: true
+      DB_DEBUG_MODE: false
+      TZ: Asia/Tokyo
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.109
+        ipv6_address: fde4:db8::13
+    ports:
+      - mode: ingress
+        target: 8081
+        published: 8081
+        protocol: tcp
+    privileged: true
+    restart: always
+    tty: true
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "0"
+    volumes:
+      - type: bind
+        source: ./controller/api
+        target: /go/src/github.com/Pluslab/cyphonic/controller/api
+        bind:
+          create_host_path: true
+    working_dir: /go/src/github.com/Pluslab/cyphonic/controller/api
+
+  ### controller web container
+  web:
+    build:
+      context: ./.docker/web
+      dockerfile: Dockerfile
+    container_name: web.local.cyphonic.org
+    tty: true
+    volumes:
+      - type: bind
+        source: ./controller/web
+        target: /app
+        bind:
+          create_host_path: true
+    environment:
+      - WATCHPACK_POLLING=true
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.210
+        ipv6_address: fde4:db8::210
+    ports:
+      - mode: ingress
+        target: 3001
+        published: 3001
+        protocol: tcp
+    privileged: true
+    restart: always
+
+  ### elasticsearch container: logs store
+  elasticsearch:
+    build:
+      context: ./.docker/elasticsearch
+      dockerfile: Dockerfile
+    container_name: elasticsearch.local.cyphonic.org
+    privileged: true
+    restart: always
+    tty: true
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.117
+        ipv6_address: fde4:db8::117
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    environment:
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false" # Basic auth / SSL disable
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "TZ=Asia/Tokyo"
+    ports:
+      - mode: ingress
+        published: 9200
+        target: 9200
+        protocol: tcp
+
+  ### kibana container: log query (KQL - Kibana QL)
+  kibana:
+    build:
+      context: ./.docker/kibana
+      dockerfile: Dockerfile
+    container_name: kibana.local.cyphonic.org
+    privileged: true
+    restart: always
+    tty: true
+    networks:
+      cyphonic:
+        ipv4_address: 10.0.3.118
+        ipv6_address: fde4:db8::118
+    environment:
+      - "TZ=Asia/Tokyo"
+      - "i18n.locale=ja-JP"
+      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+    ports:
+      - mode: ingress
+        published: 5601
+        target: 5601
+        protocol: tcp
+
+networks:
+  cyphonic:
+    name: cyphonic_cyphonic
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.3.0/24
+        - subnet: fde4:db8::/64
+    enable_ipv6: true
+
+volumes:
+  cockroachdb:
+    name: cyphonic_cockroachdb

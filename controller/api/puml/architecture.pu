@@ -1,0 +1,31 @@
+@startuml architecture
+skinparam componentStyle rectangle
+
+[injector] -down-> [driver]
+
+package "adapter" {
+    [controller]
+    [presenter]
+    [gateway]
+}
+
+[gateway] - [orm]
+
+package "usecase" {
+    package "port" {
+        [inputPort]
+        [outputPort]
+        [repository]
+    }
+    [interactor] .up.> [inputPort]
+    [interactor] -up-> [outputPort]
+    [interactor] -up-> [repository]
+}
+
+[driver] -down-> [controller]
+[controller] -down-> [inputPort]
+[presenter] .down.> [outputPort]
+[gateway] .down.> [repository]
+[interactor] -down-> [domain]
+
+@enduml

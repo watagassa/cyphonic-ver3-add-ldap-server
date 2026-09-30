@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: "codelab-monitor"
+
+rule_files:
+  # - "first.rules"
+  # - "second.rules"
+
+scrape_configs:
+  - job_name: "node"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "as.local.cyphonic.org:9100"
+          - "nms01.local.cyphonic.org:9100"
+          - "trs01.local.cyphonic.org:9100"
+          - "node.local.cyphonic.org:9100"
+          - "node2.local.cyphonic.org:9100"
+          - "node3.local.cyphonic.org:9100"
+          - "node4.local.cyphonic.org:9100"
