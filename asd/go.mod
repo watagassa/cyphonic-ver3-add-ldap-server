@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/quic-go/quic-go v0.50.1
 	go.uber.org/mock v0.5.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.12.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
